@@ -17,15 +17,34 @@ Revised Text: """`;
 
 export const improveWriting = async (text: string) => {
   const prompt = PROMPT.replace("{input}", text);
+  const { model, maxTokens, apiKey } = useOpenAiStore.getState();
 
-  const { model, maxTokens } = useOpenAiStore.getState();
+  // For Ollama endpoints
+  if (apiKey === 'sk-1234567890abcdef') {
+    const result = await openai().post('/api/generate', {
+      model: model ?? DEFAULT_MODEL,
+      prompt,
+      max_tokens: maxTokens ?? DEFAULT_MAX_TOKENS,
+      temperature: 0,
+      stop: ['"""'],
+      stream: false,
+    });
+    
+    if (!result.data.response) {
+      throw new Error(t`Ollama did not return any response for your text.`);
+    }
 
+    return result.data.response;
+  }
+
+  // For OpenAI endpoints
   const result = await openai().chat.completions.create({
     messages: [{ role: "user", content: prompt }],
     model: model ?? DEFAULT_MODEL,
     max_tokens: maxTokens ?? DEFAULT_MAX_TOKENS,
     temperature: 0,
     stop: ['"""'],
+    stream: false,
     n: 1,
   });
 
